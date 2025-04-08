@@ -25,7 +25,6 @@ if "timer_start" not in st.session_state:
         st.session_state.timer_start = time.time()
         st.session_state.timer_start = time.time()
 st.success("Quiz has started! Timer is running.")
-st.stop()
     st.stop()
 
 # Calculate remaining time
