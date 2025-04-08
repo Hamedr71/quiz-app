@@ -30,7 +30,7 @@ if st.session_state.start_time is None:
     start_clicked = st.button("Start Quiz for All")
     if start_clicked:
         st.session_state.start_time = time.time()
-        st.experimental_set_query_params(started="true")
+        st.query_params(started="true")
         st.success("Quiz started. Please refresh the page or click the link again.")
     st.stop()
 
