@@ -2,24 +2,25 @@
 import streamlit as st
 import time
 import uuid
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Quiz Game", layout="centered")
 
-# Simulated database (resets on app restart)
+# Simulated session-based data
 if "responses" not in st.session_state:
     st.session_state.responses = []
 if "submitted_users" not in st.session_state:
     st.session_state.submitted_users = set()
 
-# Timer duration setup
+# Timer settings
 TIMER_MINUTES = 6
 TIMER_SECONDS = TIMER_MINUTES * 60
 
-# Assign a unique session ID for each participant
+# Unique ID for each session
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
-# Start quiz button
+# Quiz start
 if "timer_start" not in st.session_state:
     st.title("Welcome to the Quiz Game!")
     if st.button("Start Quiz"):
@@ -28,26 +29,22 @@ if "timer_start" not in st.session_state:
         st.stop()
     st.stop()
 
-# Countdown logic
+# Time remaining
 def get_remaining_time():
     elapsed = int(time.time() - st.session_state.timer_start)
     return max(0, TIMER_SECONDS - elapsed)
 
 remaining = get_remaining_time()
 
-# Show countdown timer live
-timer_placeholder = st.empty()
-if remaining > 0:
-    with timer_placeholder.container():
-        minutes = remaining // 60
-        seconds = remaining % 60
-        st.info(f"⏳ Time Remaining: {minutes:02d}:{seconds:02d}")
-        time.sleep(1)
-        st.experimental_rerun()
-else:
-    st.success("⏰ Time is up! Auto-submitting your answers...")
+# Auto-refresh the app every 1 second (Streamlit Cloud safe)
+st_autorefresh(interval=1000, limit=remaining, key="auto_refresh")
 
-# Prevent multiple submissions
+# Show live countdown
+minutes = remaining // 60
+seconds = remaining % 60
+st.info(f"⏳ Time Remaining: {minutes:02d}:{seconds:02d}")
+
+# If already submitted
 if st.session_state.user_id in st.session_state.submitted_users:
     st.success("✅ You have already submitted. Thank you!")
     st.stop()
@@ -84,7 +81,7 @@ with st.form("quiz_form"):
 
     submitted = st.form_submit_button("Submit Now")
 
-# Auto-submit if time runs out
+# Auto-submit if time expires
 if remaining == 0 and st.session_state.user_id not in st.session_state.submitted_users:
     submitted = True
 
@@ -102,11 +99,11 @@ if submitted and st.session_state.user_id not in st.session_state.submitted_user
     st.success(f"🎉 Your total score: {actual_score}/12")
     st.stop()
 
-# Show participation status
+# Participation summary
 st.subheader("👥 Participants Submitted:")
 st.write(len(st.session_state.submitted_users))
 
-# Results section after all participants submit or time is up
+# Final results
 if remaining == 0:
     st.header("📊 All responses received — Results")
     st.write(st.session_state.responses)
