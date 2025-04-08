@@ -23,7 +23,9 @@ if "user_id" not in st.session_state:
 if "timer_start" not in st.session_state:
     if st.button("Start Quiz"):
         st.session_state.timer_start = time.time()
-        st.experimental_rerun()
+        st.session_state.timer_start = time.time()
+st.success("Quiz has started! Timer is running.")
+st.stop()
     st.stop()
 
 # Calculate remaining time
