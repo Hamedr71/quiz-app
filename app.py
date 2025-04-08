@@ -6,45 +6,45 @@ from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Quiz Game", layout="centered")
 
-# Simulated session-based data
+# Simulated session-based storage
 if "responses" not in st.session_state:
     st.session_state.responses = []
 if "submitted_users" not in st.session_state:
     st.session_state.submitted_users = set()
+if "quiz_started" not in st.session_state:
+    st.session_state.quiz_started = False
 
-# Timer settings
+# Constants
 TIMER_MINUTES = 6
 TIMER_SECONDS = TIMER_MINUTES * 60
 
-# Unique ID for each session
+# Assign unique ID
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
-# Quiz start
-if "timer_start" not in st.session_state:
+# Start Quiz
+if not st.session_state.quiz_started:
     st.title("Welcome to the Quiz Game!")
     if st.button("Start Quiz"):
         st.session_state.timer_start = time.time()
-        st.success("Quiz has started! Timer is running.")
-        st.stop()
+        st.session_state.quiz_started = True
+        st.success("Quiz started! Timer is now running.")
+        st.experimental_rerun()
     st.stop()
 
-# Time remaining
-def get_remaining_time():
-    elapsed = int(time.time() - st.session_state.timer_start)
-    return max(0, TIMER_SECONDS - elapsed)
+# Calculate remaining time based on locked start time
+elapsed = int(time.time() - st.session_state.timer_start)
+remaining = max(0, TIMER_SECONDS - elapsed)
 
-remaining = get_remaining_time()
-
-# Auto-refresh the app every 1 second (Streamlit Cloud safe)
+# Auto-refresh every 1 sec
 st_autorefresh(interval=1000, limit=remaining, key="auto_refresh")
 
-# Show live countdown
+# Countdown display
 minutes = remaining // 60
 seconds = remaining % 60
 st.info(f"⏳ Time Remaining: {minutes:02d}:{seconds:02d}")
 
-# If already submitted
+# Prevent re-submissions
 if st.session_state.user_id in st.session_state.submitted_users:
     st.success("✅ You have already submitted. Thank you!")
     st.stop()
@@ -81,11 +81,11 @@ with st.form("quiz_form"):
 
     submitted = st.form_submit_button("Submit Now")
 
-# Auto-submit if time expires
+# Auto-submit if time runs out
 if remaining == 0 and st.session_state.user_id not in st.session_state.submitted_users:
     submitted = True
 
-# Handle submission
+# Submission logic
 if submitted and st.session_state.user_id not in st.session_state.submitted_users:
     actual_score = sum([a == b for a, b in zip(math_answers, correct_math)]) +                    sum([a == b for a, b in zip(general_answers, correct_general)])
     st.session_state.responses.append({
@@ -103,7 +103,7 @@ if submitted and st.session_state.user_id not in st.session_state.submitted_user
 st.subheader("👥 Participants Submitted:")
 st.write(len(st.session_state.submitted_users))
 
-# Final results
+# Show all results
 if remaining == 0:
     st.header("📊 All responses received — Results")
     st.write(st.session_state.responses)
