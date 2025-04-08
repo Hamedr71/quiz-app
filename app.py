@@ -33,12 +33,29 @@ if st.session_state.start_time is None:
         st.success("Quiz started. Please refresh the page or click the link again.")
     st.stop()
 
-# Timer
-elapsed = int(time.time() - st.session_state.start_time)
-remaining = max(0, TIMER_SECONDS - elapsed)
-minutes = remaining // 60
-seconds = remaining % 60
-st.info(f"Time Remaining: {minutes:02d}:{seconds:02d}")
+# Timer block with real-time update
+timer_placeholder = st.empty()
+
+if "timer_start" not in st.session_state:
+    st.session_state.timer_start = time.time()
+
+def get_remaining_time():
+    elapsed = int(time.time() - st.session_state.timer_start)
+    return max(0, TIMER_SECONDS - elapsed)
+
+remaining = get_remaining_time()
+
+# Live countdown
+if remaining > 0:
+    with timer_placeholder.container():
+        minutes = remaining // 60
+        seconds = remaining % 60
+        st.info(f"⏳ Time Remaining: {minutes:02d}:{seconds:02d}")
+        time.sleep(1)
+        st.experimental_rerun()
+else:
+    st.success("⏰ Time is up! Auto-submitting your answers...")
+
 
 # Prevent multiple submissions
 if st.session_state.user_id in st.session_state.submitted_users:
