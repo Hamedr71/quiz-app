@@ -1,22 +1,57 @@
 
 import streamlit as st
 import uuid
+import numpy as np
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Quiz Game", layout="centered")
 
-# Memory-only storage
+# Refresh the page every 10 seconds to update performance data
+st_autorefresh(interval=10000, key="refresh")
+
+# Initialize session memory
 if "responses" not in st.session_state:
     st.session_state.responses = []
 if "submitted_users" not in st.session_state:
     st.session_state.submitted_users = set()
-
-# Assign unique ID
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
-# Prevent resubmission
+# Show result if already submitted
 if st.session_state.user_id in st.session_state.submitted_users:
-    st.success("✅ You have already submitted. Thank you!")
+    st.success("✅ You have submitted. Here's your live-updating result:")
+
+    # Fetch own response
+    my_response = [r for r in st.session_state.responses if r["id"] == st.session_state.user_id][0]
+    my_score = my_response["score"]
+    estimate = my_response["estimate"]
+    top_50_self = my_response["top50"]
+    top_25_self = my_response["top25"]
+
+    # All scores
+    scores = [r["score"] for r in st.session_state.responses]
+    median_score = np.median(scores)
+    top_25_cutoff = np.percentile(scores, 75)
+
+    # Evaluation
+    st.markdown(f"### 🎯 Your score: **{my_score}/12**")
+    if estimate == my_score:
+        st.info(f"🧠 You estimated: {estimate}/12 → ✅ Accurate")
+    elif estimate > my_score:
+        st.warning(f"🧠 You estimated: {estimate}/12 → ❌ Overestimated")
+    else:
+        st.info(f"🧠 You estimated: {estimate}/12 → ❌ Underestimated")
+
+    st.markdown("### 📊 Updated Group Analysis:")
+    in_top_50 = my_score >= median_score
+    in_top_25 = my_score >= top_25_cutoff
+
+    st.write(f"📈 You said you're in the **top 50%** → {'✅ Correct' if top_50_self == in_top_50 else '❌ Incorrect'}")
+    st.write(f"📈 You said you're in the **top 25%** → {'✅ Correct' if top_25_self == in_top_25 else '❌ Incorrect'}")
+
+    st.markdown("---")
+    st.subheader("👥 All Submissions:")
+    st.write(st.session_state.responses)
     st.stop()
 
 # Correct answers
@@ -63,13 +98,4 @@ if submitted and st.session_state.user_id not in st.session_state.submitted_user
     })
     st.session_state.submitted_users.add(st.session_state.user_id)
     st.success(f"🎉 Your total score: {actual_score}/12")
-    st.stop()
-
-# Participation count
-st.subheader("👥 Participants Submitted:")
-st.write(len(st.session_state.submitted_users))
-
-# Group result
-if len(st.session_state.submitted_users) > 0:
-    st.header("📊 All responses received — Results")
-    st.write(st.session_state.responses)
+    st.experimental_rerun()
