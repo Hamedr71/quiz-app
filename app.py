@@ -8,44 +8,33 @@ st.set_page_config(page_title="Quiz Game", layout="centered")
 # Simulated database (use cloud database in production)
 if "responses" not in st.session_state:
     st.session_state.responses = []
-if "start_time" not in st.session_state:
-    st.session_state.start_time = None
 if "submitted_users" not in st.session_state:
     st.session_state.submitted_users = set()
 
-# Timer duration
+# Timer setup
 TIMER_MINUTES = 6
 TIMER_SECONDS = TIMER_MINUTES * 60
 
-# Unique session ID per participant
+# Generate a unique session ID for each participant
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
-# Questions
-correct_math = [2, 5, 19, 20, 3, 15]
-correct_general = [False, False, True, False, True, False]
-
-# Start screen
-if st.session_state.start_time is None:
-    start_clicked = st.button("Start Quiz for All")
-    if start_clicked:
-        st.session_state.start_time = time.time()
-        st.success("Quiz started. Please refresh the page or click the link again.")
+# Timer initialization
+if "timer_start" not in st.session_state:
+    if st.button("Start Quiz"):
+        st.session_state.timer_start = time.time()
+        st.experimental_rerun()
     st.stop()
 
-# Timer block with real-time update
-timer_placeholder = st.empty()
-
-if "timer_start" not in st.session_state:
-    st.session_state.timer_start = time.time()
-
+# Calculate remaining time
 def get_remaining_time():
     elapsed = int(time.time() - st.session_state.timer_start)
     return max(0, TIMER_SECONDS - elapsed)
 
 remaining = get_remaining_time()
 
-# Live countdown
+# Show countdown timer
+timer_placeholder = st.empty()
 if remaining > 0:
     with timer_placeholder.container():
         minutes = remaining // 60
@@ -56,13 +45,15 @@ if remaining > 0:
 else:
     st.success("⏰ Time is up! Auto-submitting your answers...")
 
-
 # Prevent multiple submissions
 if st.session_state.user_id in st.session_state.submitted_users:
-    st.success("You have already submitted. Thank you!")
+    st.success("✅ You have already submitted. Thank you!")
     st.stop()
 
-# Quiz form
+# Quiz questions
+correct_math = [2, 5, 19, 20, 3, 15]
+correct_general = [False, False, True, False, True, False]
+
 with st.form("quiz_form"):
     st.header("Answer the following questions:")
 
@@ -90,7 +81,7 @@ with st.form("quiz_form"):
 
     submitted = st.form_submit_button("Submit Now")
 
-# Auto-submit if time is up
+# Auto-submit if time runs out
 if remaining == 0 and st.session_state.user_id not in st.session_state.submitted_users:
     submitted = True
 
@@ -105,13 +96,14 @@ if submitted and st.session_state.user_id not in st.session_state.submitted_user
         "top25": top_25
     })
     st.session_state.submitted_users.add(st.session_state.user_id)
-    st.success(f"Your total score: {actual_score}/12")
+    st.success(f"🎉 Your total score: {actual_score}/12")
     st.stop()
 
-# Display results if all users submitted (simulated end condition)
-st.subheader("Participants Submitted:")
+# Show participation info
+st.subheader("👥 Participants Submitted:")
 st.write(len(st.session_state.submitted_users))
 
+# Display all results if quiz is over
 if remaining == 0:
-    st.header("All responses received — Results")
+    st.header("📊 All responses received — Results")
     st.write(st.session_state.responses)
