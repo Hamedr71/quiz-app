@@ -5,36 +5,37 @@ import uuid
 
 st.set_page_config(page_title="Quiz Game", layout="centered")
 
-# Simulated database (use cloud database in production)
+# Simulated database (resets on app restart)
 if "responses" not in st.session_state:
     st.session_state.responses = []
 if "submitted_users" not in st.session_state:
     st.session_state.submitted_users = set()
 
-# Timer setup
+# Timer duration setup
 TIMER_MINUTES = 6
 TIMER_SECONDS = TIMER_MINUTES * 60
 
-# Generate a unique session ID for each participant
+# Assign a unique session ID for each participant
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
-# Timer initialization
+# Start quiz button
 if "timer_start" not in st.session_state:
+    st.title("Welcome to the Quiz Game!")
     if st.button("Start Quiz"):
         st.session_state.timer_start = time.time()
-        st.session_state.timer_start = time.time()
-st.success("Quiz has started! Timer is running.")
+        st.success("Quiz has started! Timer is running.")
+        st.stop()
     st.stop()
 
-# Calculate remaining time
+# Countdown logic
 def get_remaining_time():
     elapsed = int(time.time() - st.session_state.timer_start)
     return max(0, TIMER_SECONDS - elapsed)
 
 remaining = get_remaining_time()
 
-# Show countdown timer
+# Show countdown timer live
 timer_placeholder = st.empty()
 if remaining > 0:
     with timer_placeholder.container():
@@ -51,10 +52,11 @@ if st.session_state.user_id in st.session_state.submitted_users:
     st.success("✅ You have already submitted. Thank you!")
     st.stop()
 
-# Quiz questions
+# Quiz data
 correct_math = [2, 5, 19, 20, 3, 15]
 correct_general = [False, False, True, False, True, False]
 
+# Quiz form
 with st.form("quiz_form"):
     st.header("Answer the following questions:")
 
@@ -100,11 +102,11 @@ if submitted and st.session_state.user_id not in st.session_state.submitted_user
     st.success(f"🎉 Your total score: {actual_score}/12")
     st.stop()
 
-# Show participation info
+# Show participation status
 st.subheader("👥 Participants Submitted:")
 st.write(len(st.session_state.submitted_users))
 
-# Display all results if quiz is over
+# Results section after all participants submit or time is up
 if remaining == 0:
     st.header("📊 All responses received — Results")
     st.write(st.session_state.responses)
